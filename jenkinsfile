@@ -1,27 +1,33 @@
 pipeline {
     agent any
-
+    
     stages {
         stage('Build') {
             steps {
-                // Your build steps here
+                script {
+                    // Build Docker image
+                    docker.build('992382769101.dkr.ecr.ap-south-1.amazonaws.com/my-timeoff-app/my-timeoff-app:latest')
+                }
             }
         }
+
+        stage('Push to ECR') {
+            steps {
+                script {
+                    // Push image to ECR
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AKIA6ODU7K7GWWF4WVSM', credentialsId: 'aws-creds-id', secretKeyVariable: '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']]) {
+                        sh "aws ecr get-login-password --region ap-south-1 | docker login --venkatnaidu15@yahoo.com AWS --Sritha@21-stdin 992382769101.dkr.ecr.ap-south-1.amazonaws.com/my-timeoff-app/my-timeoff-app:latest"
+                        docker.push '992382769101.dkr.ecr.ap-south-1.amazonaws.com/my-timeoff-app/my-timeoff-app:latest/my-timeoff-app:latest'
+                    }
+                }
+            }
+        }
+
         stage('Deploy to EKS') {
             steps {
                 script {
-                    withAWS(credentials: 'aws-credentials', region: 'ap-south-1') {
-                        eksUpdateCluster(
-                            eksClusterName: 'MyEKSCluster',
-                            eksEndpoint: 'https://<eks-cluster-endpoint>',
-                            eksReleaseLabel: '1.29',
-                            roleArn: 'arn:aws:iam::992382769101:role/eksClusterRole'
-                        )
-                    }
-                    kubernetesDeploy(
-                        kubeconfigId: 'eks-kubeconfig',
-                        configs: 'k8s/*.yaml'
-                    )
+                    // Deploy to EKS using kubectl
+                    sh "kubectl apply -f k8s/deployment.yaml"
                 }
             }
         }
