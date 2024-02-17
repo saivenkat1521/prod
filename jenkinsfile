@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                // Your build steps here
+            }
+        }
+        stage('Deploy to EKS') {
+            steps {
+                script {
+                    withAWS(credentials: 'aws-credentials', region: 'ap-south-1') {
+                        eksUpdateCluster(
+                            eksClusterName: 'MyEKSCluster',
+                            eksEndpoint: 'https://<eks-cluster-endpoint>',
+                            eksReleaseLabel: '1.29',
+                            roleArn: 'arn:aws:iam::992382769101:role/eksClusterRole'
+                        )
+                    }
+                    kubernetesDeploy(
+                        kubeconfigId: 'eks-kubeconfig',
+                        configs: 'k8s/*.yaml'
+                    )
+                }
+            }
+        }
+    }
+}
